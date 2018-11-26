@@ -70,10 +70,11 @@ namespace FedKeyPairGen
             var pubKeysByMnemonic = mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
 
             var scriptAndAddresses = GenerateScriptAndAddresses(mainchainNetwork, sidechainNetwork, 2, pubKeysByMnemonic);
+            var federationMemberIndexes = Enumerable.Range(0, pubKeysByMnemonic.Count).ToList();
 
             var builder = new StringBuilder();
             builder.AppendLine("# FEDERATION DETAILS");
-            Enumerable.Range(0, pubKeysByMnemonic.Count).ToList().ForEach(
+            federationMemberIndexes.ForEach(
                 i =>
                     {
                         builder.AppendLine($"# Member{i + 1} mnemonic: {mnemonics[i]}");
@@ -91,11 +92,38 @@ namespace FedKeyPairGen
             builder.AppendLine($"$sidechain_federationips = \"127.0.0.1:36012,127.0.0.1:36022,127.0.0.1:36032\"");
             builder.AppendLine($"$redeemscript = \"{scriptAndAddresses.payToMultiSig}\"");
             builder.AppendLine($"$sidechain_multisig_address = \"{scriptAndAddresses.sidechainMultisigAddress}\"");
-            Enumerable.Range(0, pubKeysByMnemonic.Count).ToList().ForEach(
-                i =>
-                    {
-                        builder.AppendLine($"$gateway{i+1}_public_key = \"{pubKeysByMnemonic[mnemonics[i]]}\"");
-                    });
+            federationMemberIndexes.ForEach(i => {
+                builder.AppendLine($"$gateway{i+1}_public_key = \"{pubKeysByMnemonic[mnemonics[i]]}\"");
+            });
+            builder.AppendLine(Environment.NewLine);
+            builder.AppendLine("######### API Queries to enable federation wallets ###########");
+            builder.AppendLine("######### Mainchain ##");
+            federationMemberIndexes.ForEach(i => {
+                builder.AppendLine($"$params = @{{\"mnemonic\" = \"{mnemonics[i]}\"; \"password\" = \"\" }}");
+                builder.AppendLine(
+                    $"Invoke-WebRequest -Uri http://localhost:360{i+1}1/api/FederationWallet/import-key -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
+            });
+            builder.AppendLine("######### SideChain ##");
+            federationMemberIndexes.ForEach(i => {
+                    builder.AppendLine($"$params = @{{ \"mnemonic\" = \"{mnemonics[i]}\"; \"password\" = \"\" }}");
+                    builder.AppendLine($"Invoke-WebRequest -Uri http://localhost:360{i + 1}2/api/FederationWallet/import-key -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
+                    builder.AppendLine($"$params = @{{ \"password\" = \"\" }}");
+                builder.AppendLine($"Invoke-WebRequest -Uri http://localhost:360{i + 1}2/api/FederationWallet/enable-federation -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
+                });
+
+            /*
+$params = @{
+  "mn"= "string";
+  "password"= "string"
+}
+
+Invoke-WebRequest -Uri http://localhost:38202/api/Wallet/account -Method post -Body ($params|ConvertTo-Json) -ContentType "application/json"
+
+             */
+
+
+
+            Enumerable.Range(0, pubKeysByMnemonic)
             this.output.WriteLine(builder.ToString());
         }
 

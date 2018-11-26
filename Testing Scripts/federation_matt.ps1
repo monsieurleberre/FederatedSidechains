@@ -3,8 +3,8 @@
 #    UPDATE THESE 5 VALUES    #
 ###############################
 $root_datadir = "C:\Users\Matthieu\AppData\Roaming\StratisNode\federation" 
-$path_to_federationgatewayd = "C:\Users\Matthieu\source\repos\_FederatedSidechains\src\Stratis.FederationGatewayD"
-$path_to_sidechaind = "C:\Users\Matthieu\source\repos\_FederatedSidechains\src\Stratis.SidechainD"
+$path_to_federationgatewayd = "C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.FederationGatewayD"
+$path_to_sidechaind = "C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.SidechainD"
 $path_to_stratisd = "C:\Users\Matthieu\source\repos\StratisBitcoinFullNode\src\Stratis.StratisD"
 $path_to_stratis_wallet_with_funds = "C:\Users\Matthieu\AppData\Roaming\StratisNode\stratis\StratisTest\walletTest1.wallet.json"
 
@@ -16,12 +16,11 @@ New-Item -ItemType directory -Force -Path $root_datadir\MainchainUser\stratis\St
 New-Item -ItemType directory -Force -Path $root_datadir\MiningNode
 New-Item -ItemType directory -Force -Path $root_datadir\SidechainUser
 
-If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks)) 
-{
-	$destinations = "$root_datadir\gateway1\stratis\StratisTest","$root_datadir\gateway2\stratis\StratisTest","$root_datadir\gateway3\stratis\StratisTest","$root_datadir\MainchainUser\stratis\StratisTest"
-	$destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}
-	$destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\chain -Recurse -Destination $_}
-	$destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview -Recurse -Destination $_}
+If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks)) {
+    $destinations = "$root_datadir\gateway1\stratis\StratisTest", "$root_datadir\gateway2\stratis\StratisTest", "$root_datadir\gateway3\stratis\StratisTest", "$root_datadir\MainchainUser\stratis\StratisTest"
+    $destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}
+    $destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\chain -Recurse -Destination $_}
+    $destinations | % {Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview -Recurse -Destination $_}
     Copy-Item -Path $path_to_stratis_wallet_with_funds -Destination $root_datadir\MainchainUser\stratis\StratisTest
 }
 
@@ -48,8 +47,8 @@ $gateway3_public_key = "03093239d5344ddb4c69c46c75bd629519e0b68d2cfc1a86cd63115f
 $color_gateway1 = "0E" # light yellow on black
 $color_gateway2 = "0A" # light green on black
 $color_gateway3 = "09" # light blue on black
-$color_miner    = "0C" # light red on black
-$color_wallets  = "0D" # light purple on black
+$color_miner = "0C" # light red on black
+$color_wallets = "0D" # light purple on black
 
 # The interval between starting the networks run, in seconds.
 $interval_time = 5
@@ -91,3 +90,6 @@ cd $path_to_sidechaind
 # SidechainUser
 start-process cmd -ArgumentList "/k color $color_wallets && dotnet run -port=26179 -apiport=38225 -agentprefix=sideuser -datadir=$root_datadir\SidechainUser agentprefix=sc_user -addnode=127.0.0.1:36012 -addnode=127.0.0.1:36022 -addnode=127.0.0.1:36032"
 timeout $interval_time
+
+# send queries to start enable federation nodes
+federation

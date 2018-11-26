@@ -84,7 +84,6 @@ namespace Stratis.FederationGatewayD
                 .UseBlockNotification()
                 .AddFederationGateway()
                 .UseApi()
-                //.UseApps()
                 .AddRPC()
                 .Build();
             return node;
