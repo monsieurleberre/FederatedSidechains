@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -10,6 +11,8 @@ using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Features.PoA.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.Bitcoin.Tests.Common;
+using Stratis.FederatedPeg.Features.FederationGateway;
+using Stratis.Sidechains.Networks;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
@@ -31,17 +34,25 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             return builder;
         }
 
-        public CoreNode CreatePoANode(PoANetwork network)
+        public CoreNode CreateSidechainNode(PoANetwork network)
         {
             return this.CreateNode(new PoANodeRunner(this.GetNextDataFolderName(), network, this.TimeProvider), "poa.conf");
         }
 
-        public CoreNode CreatePoANode(PoANetwork network, Key key)
+        public CoreNode CreateSidechainNode(FederatedPegRegTest network, Key key)
         {
             string dataFolder = this.GetNextDataFolderName();
             CoreNode node = this.CreateNode(new PoANodeRunner(dataFolder, network, this.TimeProvider), "poa.conf");
+            var quorum = network.FederationKeys.Count / 2 + 1;
+            var pubKeys = network.FederationKeys.Select(k => k.PubKey).ToArray();
+            var multisigRedeemScript = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(quorum, pubKeys);
 
-            var settings = new NodeSettings(network, args: new string[] { "-conf=poa.conf", "-datadir=" + dataFolder });
+            var settings = new NodeSettings(network, args: new string[]
+               {
+                   "-conf=poa.conf",
+                   "-datadir=" + dataFolder,
+                   $"-{FederationGatewaySettings.RedeemScriptParam}={multisigRedeemScript}"
+               });
             var tool = new KeyTool(settings.DataFolder);
             tool.SavePrivateKey(key);
 
