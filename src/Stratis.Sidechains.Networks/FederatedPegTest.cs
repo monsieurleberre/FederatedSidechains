@@ -13,8 +13,10 @@ namespace Stratis.Sidechains.Networks
     /// </summary>
     public class FederatedPegTest : PoANetwork
     {
+        #region Delete Before Release
         public IList<Mnemonic> FederationMnemonics { get; }
         public IList<Key> FederationKeys { get; private set; }
+        #endregion
 
         internal FederatedPegTest()
         {
@@ -36,6 +38,8 @@ namespace Stratis.Sidechains.Networks
 
             this.Genesis = genesisBlock;
 
+            #region Delete Before Release
+
             this.FederationMnemonics = new[] {
                  "ensure feel swift crucial bridge charge cloud tell hobby twenty people mandate",
                  "quiz sunset vote alley draw turkey hill scrap lumber game differ fiction",
@@ -43,6 +47,7 @@ namespace Stratis.Sidechains.Networks
              }.Select(m => new Mnemonic(m, Wordlist.English)).ToList();
 
             this.FederationKeys = this.FederationMnemonics.Select(m => m.DeriveExtKey().PrivateKey).ToList();
+            #endregion
 
             var federationPubKeys = this.FederationKeys.Select(k => k.PubKey).ToList();
 
