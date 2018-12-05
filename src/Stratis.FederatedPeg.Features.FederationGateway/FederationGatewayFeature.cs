@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -201,7 +202,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
                 this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString() + "  " +
                 "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8));
+                this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8) + 
+                "NodeStore.HasSuspended: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+                this.crossChainTransferStore.HasSuspended().ToString().PadRight(8)
+                );
+
+            //var partials = this.crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.Partial).ConfigureAwait(false).GetAwaiter().GetResult();
+            //benchLogs.AppendLine($"Partial Transfers: [{string.Join(",", partials)}]");
+            //var fullySigned = this.crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false).GetAwaiter().GetResult();
+            //benchLogs.AppendLine($"Fully signed Transfers: [{string.Join(",", fullySigned)}]");
+            //var suspended = this.crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.Suspended).ConfigureAwait(false).GetAwaiter().GetResult();
+            //benchLogs.AppendLine($"Suspended Transfers: [{string.Join(",", suspended)}]");
         }
 
         public void AddComponentStats(StringBuilder benchLog)
@@ -209,8 +220,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             benchLog.AppendLine();
             benchLog.AppendLine("====== Federation Wallet ======");
 
-            var items = this.federationWalletManager.GetSpendableTransactionsInWallet(1);
-            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength) + " Confirmed balance: " + new Money(items.Sum(s => s.Transaction.Amount)).ToString());
+            var balances = this.federationWalletManager.GetWallet().GetSpendableAmount();
+            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength) 
+                                + " Confirmed balance: " + balances.ConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength) 
+                                + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString());
             benchLog.AppendLine();
         }
     }
