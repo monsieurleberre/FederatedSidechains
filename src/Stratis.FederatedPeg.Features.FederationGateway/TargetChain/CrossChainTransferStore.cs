@@ -1041,8 +1041,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     return partialTransfers;
                 }
 
-                return partialTransfers.OrderBy(t => this.EarliestOutput(t.PartialTransaction), Comparer<OutPoint>.Create((x, y) =>
-                    this.federationWalletManager.CompareOutpoints(x, y))).ToArray();
+                return partialTransfers
+                    ?.OrderBy(t => this.EarliestOutput(t.PartialTransaction), Comparer<OutPoint>.Create((x, y) =>
+                        this.federationWalletManager.CompareOutpoints(x, y)))
+                    ?.ToArray();
             }
         }
 
