@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
+using FluentAssertions;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Models;
@@ -12,6 +17,7 @@ using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Utilities;
+using Stratis.Bitcoin.Utilities.JsonErrors;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
@@ -77,6 +83,28 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
         }
 
         [Fact]
+        public void GetGeneralInfo_When_No_Wallet_Should_Give_Not_Found_Result()
+        {
+            this.walletManager.GetWallet().ReturnsForAnyArgs((FederationWallet)null);
+
+            IActionResult result = this.controller.GetGeneralInfo();
+            result.Should().BeOfType<NotFoundObjectResult>()
+                .And.Subject.As<NotFoundObjectResult>()
+                .StatusCode.Should().Be(404);
+        }
+
+        [Fact]
+        public void GetGeneralInfo_When_Error_Retrieving_Wallet_Should_Return_ErrorResult()
+        {
+            this.walletManager.GetWallet().ThrowsForAnyArgs(new Exception("inner message"));
+
+            IActionResult result = this.controller.GetGeneralInfo();
+            result.Should().BeOfType<ErrorResult>()
+                .And.Subject.As<ErrorResult>()
+                .StatusCode.Should().Be(400);
+        }
+
+        [Fact]
         public void GetBalance()
         {
             this.fedWallet.MultiSigAddress = new MultiSigAddress();
@@ -87,6 +115,28 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
             Assert.Single(model.AccountsBalances);
             Assert.Equal(CoinType.Stratis, model.AccountsBalances.First().CoinType);
             Assert.Equal(0, model.AccountsBalances.First().AmountConfirmed.Satoshi);
+        }
+
+        [Fact]
+        public void GetBalance_When_No_Wallet_Should_Give_Not_Found_Result()
+        {
+            this.walletManager.GetWallet().ReturnsForAnyArgs((FederationWallet)null);
+
+            IActionResult result = this.controller.GetBalance();
+            result.Should().BeOfType<NotFoundObjectResult>()
+                .And.Subject.As<NotFoundObjectResult>()
+                .StatusCode.Should().Be(404);
+        }
+
+        [Fact]
+        public void GetBalance_When_Error_Retrieving_Wallet_Should_Return_ErrorResult()
+        {
+            this.walletManager.GetWallet().ThrowsForAnyArgs(new Exception("inner message"));
+
+            IActionResult result = this.controller.GetBalance();
+            result.Should().BeOfType<ErrorResult>()
+                .And.Subject.As<ErrorResult>()
+                .StatusCode.Should().Be(400);
         }
 
         [Fact]
@@ -103,6 +153,28 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
         }
 
         [Fact]
+        public void GetHistory_When_No_Wallet_Should_Give_Not_Found_Result()
+        {
+            this.walletManager.GetWallet().ReturnsForAnyArgs((FederationWallet)null);
+
+            IActionResult result = this.controller.GetHistory(10);
+            result.Should().BeOfType<NotFoundObjectResult>()
+                .And.Subject.As<NotFoundObjectResult>()
+                .StatusCode.Should().Be(404);
+        }
+
+        [Fact]
+        public void GetHistory_When_Error_Retrieving_Wallet_Should_Return_ErrorResult()
+        {
+            this.walletManager.GetWallet().ThrowsForAnyArgs(new Exception("inner message"));
+
+            IActionResult result = this.controller.GetHistory(10);
+            result.Should().BeOfType<ErrorResult>()
+                .And.Subject.As<ErrorResult>()
+                .StatusCode.Should().Be(400);
+        }
+
+        [Fact]
         public void Sync()
         {
             ChainedHeader header = this.chain.Tip;
@@ -116,6 +188,21 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
         }
 
         [Fact]
+        public void Sync_When_Model_Not_Valid_Should_Return_Error_Response()
+        {
+            this.controller.ModelState.AddModelError("hash", "error message");
+            var result = this.controller.Sync(new HashModel() { Hash = uint256.One.ToString() });
+            result.Should().BeOfType<ErrorResult>();
+        }
+
+        [Fact]
+        public void Sync_When_Block_Cannot_Be_Found_Should_Return_Error_Response()
+        {
+            var result = this.controller.Sync(new HashModel() { Hash = uint256.One.ToString() });
+            result.Should().BeOfType<ErrorResult>();
+        }
+
+        [Fact]
         public void EnableFederation()
         {
             bool called = false;
@@ -124,6 +211,26 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
             this.controller.EnableFederation(new EnableFederationRequest());
 
             Assert.True(called);
+        }
+
+        [Fact]
+        public void EnableFederation_When_Model_Not_Valid_Should_Return_Error_Response()
+        {
+            this.controller.ModelState.AddModelError("hash", "error message");
+            var result = this.controller.EnableFederation(new EnableFederationRequest());
+
+            result.Should().BeOfType<ErrorResult>();
+        }
+
+        [Fact]
+        public void EnableFederation_When_Wallet_Manager_Throws_Should_Return_Error()
+        {
+            this.walletManager
+                .WhenForAnyArgs(w => w.EnableFederation(null, null, null))
+                .Do(w => throw new Exception("error"));
+            var result = this.controller.EnableFederation(new EnableFederationRequest());
+
+            result.Should().BeOfType<ErrorResult>();
         }
 
         [Fact]
